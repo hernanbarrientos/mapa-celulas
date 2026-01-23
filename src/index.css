@@ -6,3 +6,49 @@
   width: 100%;
   height: 100%;
 }
+
+/* --- ESTILO DO BOTÃO FECHAR (X) DO MAPA --- */
+
+/* O Círculo do Botão */
+.leaflet-popup-close-button {
+  width: 30px !important;        /* Mais largo para clique fácil */
+  height: 30px !important;
+  line-height: 30px !important;  /* Centraliza verticalmente */
+  border-radius: 50%;            /* Redondinho */
+  
+  background: white;             /* Fundo branco para destaque */
+  color: #6b7280 !important;     /* Cinza suave (gray-500) */
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15); /* Sombra suave */
+  
+  font-size: 18px !important;
+  font-weight: bold;
+  
+  /* Posicionamento (ajuste fino) */
+  top: 12px !important;
+  right: 12px !important;
+  
+  /* Flexbox para centralizar o X perfeitamente */
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  
+  transition: all 0.2s ease;     /* Animação suave */
+}
+
+/* Efeito ao passar o mouse (Hover) */
+.leaflet-popup-close-button:hover {
+  background: #ef4444 !important; /* Vermelho (red-500) */
+  color: white !important;        /* X fica branco */
+  transform: scale(1.1);          /* Leve zoom */
+  cursor: pointer;
+}
+
+/* Remove a linha feia que fica em volta quando clica */
+.leaflet-popup-close-button:focus {
+  outline: none;
+}
+
+/* Ajuste opcional: Aumentar espaçamento interno do Card para o X não ficar em cima do texto */
+.leaflet-popup-content {
+  margin: 16px 20px 16px 16px !important; /* top right bottom left */
+}
