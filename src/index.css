@@ -52,3 +52,33 @@
 .leaflet-popup-content {
   margin: 16px 20px 16px 16px !important; /* top right bottom left */
 }
+
+/* --- ARQUIVO: src/index.css --- */
+/* REINICIO TOTAL DO POPUP DO LEAFLET */
+
+/* Remove o fundo branco e o padding padrão do container do popup */
+.leaflet-popup-content-wrapper {
+    background: transparent !important; /* Fundo transparente */
+    box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.2), 0 8px 10px -6px rgb(0 0 0 / 0.2) !important; /* Sombra suave */
+    padding: 0 !important; /* Zero padding */
+    border-radius: 16px !important; /* Bordas bem arredondadas */
+    overflow: hidden; /* Garante que o banner não vaze nos cantos */
+}
+
+/* Remove a margem interna padrão */
+.leaflet-popup-content {
+    margin: 0 !important;
+    width: 280px !important; /* Largura fixa ideal para o card */
+}
+
+/* Ajusta a pontinha (triângulo) de baixo para ser branca */
+.leaflet-popup-tip {
+    background: white !important;
+    box-shadow: none !important;
+}
+
+/* Remove o botão de fechar padrão feio (opcional, mas recomendado) */
+.leaflet-container a.leaflet-popup-close-button {
+    display: none;
+}
+
