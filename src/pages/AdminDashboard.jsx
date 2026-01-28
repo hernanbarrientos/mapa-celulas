@@ -29,6 +29,7 @@ export default function AdminDashboard() {
   // --- ESTADOS DE UI ---
   const [editingId, setEditingId] = useState(null); 
   const [loadingGeo, setLoadingGeo] = useState(false);
+  const [loadingCep, setLoadingCep] = useState(false);
   const [statusModal, setStatusModal] = useState({ open: false, type: 'success', message: '' });
   const [deleteModal, setDeleteModal] = useState({ open: false, id: null, type: null }); 
   const [searchTerm, setSearchTerm] = useState('');
@@ -53,6 +54,35 @@ export default function AdminDashboard() {
   const [formCoordenador, setFormCoordenador] = useState({
     nome: '', whatsapp: ''
   });
+
+  // Formata: (11) 99999-9999
+    const formatarTelefone = (value) => {
+    if (!value) return "";
+    
+    // 1. Remove tudo que não é número
+    const nums = value.replace(/\D/g, "").slice(0, 11); // Limita a 11 números (DDD + 9 digitos)
+    
+    // 2. Aplica a máscara
+    if (nums.length > 10) {
+        return nums.replace(/^(\d\d)(\d{5})(\d{4}).*/, "($1) $2-$3");
+    } else if (nums.length > 5) {
+        return nums.replace(/^(\d\d)(\d{4})(\d{0,4}).*/, "($1) $2-$3");
+    } else if (nums.length > 2) {
+        return nums.replace(/^(\d\d)(\d{0,5}).*/, "($1) $2");
+    } else {
+        return nums.replace(/^(\d*)/, "($1");
+    }
+    };
+
+    const formatarCep = (value) => {
+    if (!value) return "";
+    const nums = value.replace(/\D/g, "").slice(0, 8); // Limita a 8 números
+    if (nums.length > 5) {
+      return nums.replace(/^(\d{5})(\d)/, "$1-$2");
+    }
+    return nums;
+  }
+
 
   // --- EFEITOS ---
   useEffect(() => {
@@ -92,15 +122,30 @@ export default function AdminDashboard() {
   const handleSaveSupervisor = async (e) => {
       e.preventDefault();
       setStatusModal({ open: true, type: 'loading', message: 'Salvando Supervisor...' });
+
+      // FUNÇÃO PARA LIMPAR E ADICIONAR +55
+      const limparZap = (tel) => {
+          if (!tel) return '';
+          const apenasNumeros = tel.replace(/\D/g, ''); // Remove ( ) -
+          return `+55${apenasNumeros}`; // Adiciona o DDI
+      };
+
+      // PREPARA OS DADOS LIMPOS
+      const dadosParaSalvar = {
+          nome_1: formSupervisor.nome_1,
+          whatsapp_1: limparZap(formSupervisor.whatsapp_1), // Limpa aqui
+          nome_2: formSupervisor.nome_2,
+          whatsapp_2: limparZap(formSupervisor.whatsapp_2)  // Limpa aqui
+      };
       
-      let error = null;
-      if (editingId === 'new') {
-          const { error: err } = await supabase.from('supervisores').insert([formSupervisor]);
-          error = err;
-      } else {
-          const { error: err } = await supabase.from('supervisores').update(formSupervisor).eq('id', editingId);
-          error = err;
-      }
+        let error = null;
+            if (editingId === 'new') {
+                const { error: err } = await supabase.from('supervisores').insert([dadosParaSalvar]);
+                error = err;
+            } else {
+                const { error: err } = await supabase.from('supervisores').update(dadosParaSalvar).eq('id', editingId);
+                error = err;
+            }
 
       if (error) {
           setStatusModal({ open: true, type: 'error', message: 'Erro ao salvar.' });
@@ -111,16 +156,29 @@ export default function AdminDashboard() {
       }
   };
 
+// --- SALVAR COORDENADOR (PASSO 3: Limpa e adiciona +55) ---
   const handleSaveCoordenador = async (e) => {
       e.preventDefault();
       setStatusModal({ open: true, type: 'loading', message: 'Salvando Coordenador...' });
       
+      // Função local para limpar
+      const limparZap = (tel) => {
+          if (!tel) return '';
+          const apenasNumeros = tel.replace(/\D/g, ''); 
+          return `+55${apenasNumeros}`;
+      };
+      
+      const dadosParaSalvar = {
+          nome: formCoordenador.nome,
+          whatsapp: limparZap(formCoordenador.whatsapp) // Limpeza aqui
+      };
+
       let error = null;
       if (editingId === 'new') {
-          const { error: err } = await supabase.from('coordenadores').insert([formCoordenador]);
+          const { error: err } = await supabase.from('coordenadores').insert([dadosParaSalvar]);
           error = err;
       } else {
-          const { error: err } = await supabase.from('coordenadores').update(formCoordenador).eq('id', editingId);
+          const { error: err } = await supabase.from('coordenadores').update(dadosParaSalvar).eq('id', editingId);
           error = err;
       }
 
@@ -133,35 +191,58 @@ export default function AdminDashboard() {
       }
   };
 
+  // --- ABRIR FORM COORDENADOR (PASSO 4: Tira +55 e aplica máscara) ---
+  const openFormCoordenador = (coord = null) => {
+      if (coord) { 
+          setEditingId(coord.id);
+          
+          // Função local para formatar vindo do banco
+          const formatarDoBanco = (val) => {
+              if(!val) return '';
+              const sem55 = val.replace('+55', ''); 
+              return formatarTelefone(sem55); // Usa a sua função formatarTelefone global
+          };
+
+          setFormCoordenador({ 
+              nome: coord.nome, 
+              whatsapp: formatarDoBanco(coord.whatsapp) 
+          }); 
+      } else { 
+          setEditingId('new'); 
+          setFormCoordenador({ nome: '', whatsapp: '' }); 
+      }
+  };
+
+// --- SALVAR CÉLULA (PASSO 3: Limpa Lider 1 e Lider 2) ---
   const handleSaveCelula = async (e) => {
     e.preventDefault();
     setStatusModal({ open: true, type: 'loading', message: 'Salvando Célula...' });
 
-    // Monta string legada de líderes para compatibilidade
+    const limparZap = (tel) => {
+        if (!tel) return '';
+        const apenasNumeros = tel.replace(/\D/g, ''); 
+        return `+55${apenasNumeros}`;
+    };
+
     const liderDisplay = formCelula.lider2_nome 
         ? `${formCelula.lider1_nome} e ${formCelula.lider2_nome}` 
         : formCelula.lider1_nome;
 
     const dadosParaSalvar = {
         nome: formCelula.nome,
-        // Líderes Detalhados
-        lider1_nome: formCelula.lider1_nome, lider1_whatsapp: formCelula.lider1_whatsapp,
-        lider2_nome: formCelula.lider2_nome, lider2_whatsapp: formCelula.lider2_whatsapp,
-        lider: liderDisplay, // Campo legado
+        lider1_nome: formCelula.lider1_nome, 
+        lider1_whatsapp: limparZap(formCelula.lider1_whatsapp), // Limpa Líder 1
+        lider2_nome: formCelula.lider2_nome, 
+        lider2_whatsapp: limparZap(formCelula.lider2_whatsapp), // Limpa Líder 2
+        lider: liderDisplay, 
         
-        // Relacionamentos (envia null se estiver vazio)
         supervisor_id: formCelula.supervisor_id || null, 
         coordenador_id: formCelula.coordenador_id || null,
         
         categoria: formCelula.categoria, dia: formCelula.dia,
-        
-        // Endereço Detalhado
-        cep: formCelula.cep, 
-        logradouro: formCelula.logradouro, 
-        numero: formCelula.numero, 
-        complemento: formCelula.complemento, 
-        bairro: formCelula.bairro,
-        endereco: `${formCelula.logradouro}, ${formCelula.numero}`, // Campo legado
+        cep: formCelula.cep, logradouro: formCelula.logradouro, numero: formCelula.numero, 
+        complemento: formCelula.complemento, bairro: formCelula.bairro,
+        endereco: `${formCelula.logradouro}, ${formCelula.numero}`, 
         
         lat: parseFloat(formCelula.lat), 
         lon: parseFloat(formCelula.lon)
@@ -178,11 +259,51 @@ export default function AdminDashboard() {
 
     if (error) {
         console.error(error);
-        setStatusModal({ open: true, type: 'error', message: 'Erro ao salvar célula. Verifique os dados.' });
+        setStatusModal({ open: true, type: 'error', message: 'Erro ao salvar célula.' });
     } else {
         await fetchData();
         setEditingId(null);
         setStatusModal({ open: true, type: 'success', message: 'Célula salva com sucesso!' });
+    }
+  };
+
+  // --- ABRIR FORM CÉLULA (PASSO 4: Formata Líderes) ---
+  const openFormCelula = (celula = null) => {
+    if (celula) {
+        setEditingId(celula.id);
+        
+        const formatarDoBanco = (val) => {
+            if(!val) return '';
+            const sem55 = val.replace('+55', ''); 
+            return formatarTelefone(sem55);
+        };
+
+        const ruaAntiga = celula.endereco ? celula.endereco.split(',')[0] : '';
+        
+        setFormCelula({
+            nome: celula.nome || '', 
+            lider1_nome: celula.lider1_nome || celula.lider || '', 
+            lider1_whatsapp: formatarDoBanco(celula.lider1_whatsapp || celula.whatsapp1), // Formata
+            lider2_nome: celula.lider2_nome || '',
+            lider2_whatsapp: formatarDoBanco(celula.lider2_whatsapp), // Formata
+            
+            supervisor_id: celula.supervisor_id || '', 
+            coordenador_id: celula.coordenador_id || '',
+            categoria: celula.categoria || 'figueira', dia: celula.dia || '',
+            cep: celula.cep || '', 
+            logradouro: celula.logradouro || ruaAntiga,
+            numero: celula.numero || '', 
+            complemento: celula.complemento || '', 
+            bairro: celula.bairro || '',
+            lat: celula.lat || '', lon: celula.lon || ''
+        });
+    } else {
+        setEditingId('new');
+        setFormCelula({
+            nome: '', lider1_nome: '', lider1_whatsapp: '', lider2_nome: '', lider2_whatsapp: '',
+            supervisor_id: '', coordenador_id: '', categoria: 'figueira', dia: '',
+            cep: '', logradouro: '', numero: '', complemento: '', bairro: '', lat: '', lon: ''
+        });
     }
   };
 
@@ -210,72 +331,98 @@ export default function AdminDashboard() {
     }
   };
 
-  // --- ABRIR FORMULÁRIOS ---
+ // --- ABRIR FORMULÁRIOS ---
+
   const openFormSupervisor = (sup = null) => {
-      if (sup) { setEditingId(sup.id); setFormSupervisor({ nome_1: sup.nome_1, whatsapp_1: sup.whatsapp_1, nome_2: sup.nome_2 || '', whatsapp_2: sup.whatsapp_2 || '' }); } 
-      else { setEditingId('new'); setFormSupervisor({ nome_1: '', whatsapp_1: '', nome_2: '', whatsapp_2: '' }); }
+      if (sup) { 
+          setEditingId(sup.id); 
+          
+          // Remove o +55 (os primeiros 3 caracteres) e formata
+          const formatarDoBanco = (val) => {
+              if(!val) return '';
+              const sem55 = val.replace('+55', ''); 
+              return formatarTelefone(sem55);
+          };
+
+          setFormSupervisor({ 
+              nome_1: sup.nome_1, 
+              whatsapp_1: formatarDoBanco(sup.whatsapp_1), 
+              nome_2: sup.nome_2 || '', 
+              whatsapp_2: formatarDoBanco(sup.whatsapp_2) 
+          }); 
+      } else { 
+          setEditingId('new'); 
+          setFormSupervisor({ nome_1: '', whatsapp_1: '', nome_2: '', whatsapp_2: '' }); 
+      }
   };
 
-  const openFormCoordenador = (coord = null) => {
-      if (coord) { setEditingId(coord.id); setFormCoordenador({ nome: coord.nome, whatsapp: coord.whatsapp }); } 
-      else { setEditingId('new'); setFormCoordenador({ nome: '', whatsapp: '' }); }
-  };
 
-  const openFormCelula = (celula = null) => {
-    if (celula) {
-        setEditingId(celula.id);
-        // Fallback para campos antigos caso os novos estejam vazios
-        const ruaAntiga = celula.endereco ? celula.endereco.split(',')[0] : '';
-        
-        setFormCelula({
-            nome: celula.nome || '', 
-            lider1_nome: celula.lider1_nome || celula.lider || '', 
-            lider1_whatsapp: celula.lider1_whatsapp || celula.whatsapp1 || '',
-            lider2_nome: celula.lider2_nome || '',
-            lider2_whatsapp: celula.lider2_whatsapp || '',
-            supervisor_id: celula.supervisor_id || '', 
-            coordenador_id: celula.coordenador_id || '',
-            categoria: celula.categoria || 'figueira', dia: celula.dia || '',
-            cep: celula.cep || '', 
-            logradouro: celula.logradouro || ruaAntiga,
-            numero: celula.numero || '', 
-            complemento: celula.complemento || '', 
-            bairro: celula.bairro || '',
-            lat: celula.lat || '', lon: celula.lon || ''
-        });
-    } else {
-        setEditingId('new');
-        setFormCelula({
-            nome: '', lider1_nome: '', lider1_whatsapp: '', lider2_nome: '', lider2_whatsapp: '',
-            supervisor_id: '', coordenador_id: '', categoria: 'figueira', dia: '',
-            cep: '', logradouro: '', numero: '', complemento: '', bairro: '', lat: '', lon: ''
-        });
-    }
-  };
+
+
 
   // --- UTILITÁRIOS ---
-  const handleBuscarCep = async () => {
-    if (formCelula.cep.length < 8) return alert('CEP inválido');
+ const handleBuscarCep = async () => {
+    // Validação simples removendo o traço para contar
+    if (formCelula.cep.replace(/\D/g, '').length < 8) {
+        setStatusModal({ open: true, type: 'error', message: 'CEP inválido' });
+        return;
+    }
+    
+    setLoadingCep(true); // ATIVAR SPINNER
+
     try {
       const res = await fetch(`https://viacep.com.br/ws/${formCelula.cep.replace(/\D/g, '')}/json/`);
       const data = await res.json();
-      if (data.erro) { alert('CEP não encontrado!'); return; }
-      setFormCelula(prev => ({ ...prev, logradouro: data.logradouro, bairro: data.bairro }));
-    } catch (error) { alert('Erro ao buscar CEP'); }
+      
+      if (data.erro) { 
+          setStatusModal({ open: true, type: 'error', message: 'CEP não encontrado!' }); 
+      } else {
+          setFormCelula(prev => ({ ...prev, logradouro: data.logradouro, bairro: data.bairro }));
+      }
+    } catch (error) { 
+        setStatusModal({ open: true, type: 'error', message: 'Erro ao buscar CEP' }); 
+    } finally {
+        setLoadingCep(false); // DESATIVAR SPINNER (Sempre roda)
+    }
   };
 
-  const handleBuscarCoordenadas = async () => {
-    if (!formCelula.logradouro || !formCelula.numero) return alert('Preencha Rua e Número');
-    setLoadingGeo(true);
-    try {
-      const query = `${formCelula.logradouro}, ${formCelula.numero}, ${formCelula.bairro}, São Paulo, Brazil`;
-      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`);
-      const data = await res.json();
-      if (data && data.length > 0) {
-        setFormCelula(prev => ({ ...prev, lat: data[0].lat, lon: data[0].lon }));
-      } else { alert('Endereço não encontrado.'); }
-    } catch (error) { alert('Erro de conexão.'); }
-    setLoadingGeo(false);
+ const handleBuscarCoordenadas = async () => {
+        if (!formCelula.logradouro) {
+            setStatusModal({ open: true, type: 'error', message: 'Preencha a Rua primeiro.' });
+            return;
+        }
+        setLoadingGeo(true);
+        try {
+        // TENTATIVA 1: Busca Exata (Rua + Número + Bairro + Brasil)
+        let query = `${formCelula.logradouro}, ${formCelula.numero}, ${formCelula.bairro}, Brazil`;
+        let res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`);
+        let data = await res.json();
+
+        // TENTATIVA 2: Se falhar (array vazio), busca sem o número (Pega o centro da rua)
+        // Isso resolve o problema de travar quando o mapa não conhece o número da casa
+        if (!data || data.length === 0) {
+            query = `${formCelula.logradouro}, ${formCelula.bairro}, Brazil`;
+            res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`);
+            data = await res.json();
+        }
+
+        // TENTATIVA 3: Último recurso, busca só a rua e cidade genérica
+        if (!data || data.length === 0) {
+            query = `${formCelula.logradouro}, São Paulo, Brazil`;
+            res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`);
+            data = await res.json();
+        }
+
+        if (data && data.length > 0) {
+            setFormCelula(prev => ({ ...prev, lat: data[0].lat, lon: data[0].lon }));
+        } else { 
+            setStatusModal({ open: true, type: 'error', message: 'Endereço não localizado no mapa.' }); 
+        }
+        } catch (error) { 
+            console.error(error); 
+            setStatusModal({ open: true, type: 'error', message: 'Erro de conexão.' }); 
+        }
+        setLoadingGeo(false);
   };
 
   const filteredCelulas = celulas.filter((celula) => {
@@ -291,7 +438,7 @@ export default function AdminDashboard() {
       
       {/* MODAL STATUS */}
       {statusModal.open && (
-         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[300] p-4">
             <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 w-full max-w-sm text-center shadow-2xl">
                 {statusModal.type === 'loading' && <div className="flex flex-col items-center py-4"><Loader2 className="animate-spin h-12 w-12 text-blue-500 mx-auto mb-4"/><h3 className="text-xl font-bold text-gray-800 dark:text-white">Aguarde...</h3><p className="text-gray-500 dark:text-gray-300 mt-2">{statusModal.message}</p></div>}
                 
@@ -335,7 +482,7 @@ export default function AdminDashboard() {
             <>
                 <div className="flex justify-between items-center mb-4">
                     <div className="flex-1 max-w-md relative"><Search className="absolute left-3 top-3 text-gray-400" size={18} /><input type="text" placeholder="Buscar..." className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border-none rounded-lg text-gray-800 dark:text-white shadow-sm" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} /></div>
-                    <button onClick={() => openFormCelula()} className="ml-4 flex items-center gap-2 bg-green-600 text-white px-4 py-2.5 rounded-lg font-bold shadow-sm hover:bg-green-700"><Plus size={20} /> <span className="hidden md:inline">Nova</span></button>
+                    <button onClick={() => openFormCelula()} className="ml-4 flex items-center gap-2 bg-green-600 text-white px-4 py-2.5 rounded-lg font-bold shadow-sm hover:bg-green-700"><Plus size={20} /> <span className="hidden md:inline">Cadastrar Nova Célula</span></button>
                 </div>
                 <div className="flex gap-2 overflow-x-auto pb-4">{['all', 'figueira', 'teens', 'valentes'].map(cat => (<button key={cat} onClick={() => setFilterCategory(cat)} className={`px-5 py-2 rounded-lg text-sm font-bold whitespace-nowrap transition-all border ${filterCategory === cat ? 'bg-gray-900 text-white border-gray-900 dark:bg-white dark:text-gray-900' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700'}`}>{cat === 'all' ? 'Todas' : LABELS[cat]}</button>))}</div>
 
@@ -489,11 +636,11 @@ export default function AdminDashboard() {
                             <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 flex items-center gap-2"><User size={14}/> Dados dos Líderes</h4>
                             <div className="grid grid-cols-2 gap-4 mb-4">
                                 <div className="col-span-2 md:col-span-1"><label className="text-xs font-bold text-gray-700 dark:text-gray-300">Nome Líder 1</label><input className="w-full border p-2.5 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white" value={formCelula.lider1_nome} onChange={e => setFormCelula({...formCelula, lider1_nome: e.target.value})} placeholder="Ex: Gabriel" required /></div>
-                                <div className="col-span-2 md:col-span-1"><label className="text-xs font-bold text-gray-700 dark:text-gray-300">WhatsApp Líder 1</label><input className="w-full border p-2.5 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white" value={formCelula.lider1_whatsapp} onChange={e => setFormCelula({...formCelula, lider1_whatsapp: e.target.value})} placeholder="+55119..." required /></div>
+                                <div className="col-span-2 md:col-span-1"><label className="text-xs font-bold text-gray-700 dark:text-gray-300">WhatsApp (DDD + Número)</label><input className="w-full border p-2.5 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white" value={formCelula.lider1_whatsapp} onChange={e => setFormCelula({...formCelula, lider1_whatsapp: formatarTelefone(e.target.value)})} required placeholder="(11) 99999-9999" maxLength={15}/></div>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="col-span-2 md:col-span-1"><label className="text-xs font-bold text-gray-700 dark:text-gray-300">Nome Líder 2 (Opcional)</label><input className="w-full border p-2.5 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white" value={formCelula.lider2_nome} onChange={e => setFormCelula({...formCelula, lider2_nome: e.target.value})} placeholder="Ex: Julia" /></div>
-                                <div className="col-span-2 md:col-span-1"><label className="text-xs font-bold text-gray-700 dark:text-gray-300">WhatsApp Líder 2</label><input className="w-full border p-2.5 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white" value={formCelula.lider2_whatsapp} onChange={e => setFormCelula({...formCelula, lider2_whatsapp: e.target.value})} placeholder="+55119..." /></div>
+                                <div className="col-span-2 md:col-span-1"><label className="text-xs font-bold text-gray-700 dark:text-gray-300">WhatsApp (DDD + Número)</label><input className="w-full border p-2.5 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white" value={formCelula.lider2_whatsapp} onChange={e => setFormCelula({...formCelula, lider2_whatsapp: formatarTelefone(e.target.value)})} placeholder="(11) 99999-9999" maxLength={15}/></div>
                             </div>
                         </div>
 
@@ -526,7 +673,23 @@ export default function AdminDashboard() {
                         {/* Endereço */}
                         <div className="space-y-3 pt-2">
                             <h3 className="font-bold text-gray-500 text-sm uppercase">Endereço</h3>
-                            <div className="flex gap-2"><input className="w-1/3 border p-3 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white" placeholder="CEP" value={formCelula.cep} onChange={e => setFormCelula({...formCelula, cep: e.target.value})}/><button type="button" onClick={handleBuscarCep} className="bg-gray-100 dark:bg-gray-600 p-3 rounded-lg"><Search size={20}/></button></div>
+                            <div className="flex gap-2">
+                                <input 
+                                    className="w-1/3 border p-3 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white" 
+                                    placeholder="00000-000" 
+                                    value={formCelula.cep} 
+                                    onChange={e => setFormCelula({...formCelula, cep: formatarCep(e.target.value)})}
+                                    maxLength={9}
+                                />
+                                <button 
+                                    type="button" 
+                                    onClick={handleBuscarCep} 
+                                    disabled={loadingCep}
+                                    className="bg-gray-100 dark:bg-gray-600 p-3 rounded-lg min-w-[50px] flex items-center justify-center hover:bg-gray-200 transition-colors disabled:opacity-50"
+                                >
+                                    {loadingCep ? <Loader2 className="animate-spin h-5 w-5 text-blue-600"/> : <Search size={20}/>}
+                                </button>
+                            </div>
                             <input className="w-full border p-3 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white" placeholder="Rua" value={formCelula.logradouro} onChange={e => setFormCelula({...formCelula, logradouro: e.target.value})} required/>
                             <div className="flex gap-2">
                                 <input className="w-1/3 border p-3 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white" placeholder="Número" value={formCelula.numero} onChange={e => setFormCelula({...formCelula, numero: e.target.value})} required/>
@@ -534,7 +697,17 @@ export default function AdminDashboard() {
                             </div>
                             <input className="w-full border p-3 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white" placeholder="Bairro" value={formCelula.bairro} onChange={e => setFormCelula({...formCelula, bairro: e.target.value})} required/>
                             <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl flex flex-col gap-3">
-                                <div className="flex justify-between items-center"><span className="text-xs font-bold text-blue-800 dark:text-blue-300">Geolocalização</span><button type="button" onClick={handleBuscarCoordenadas} disabled={loadingGeo} className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg flex items-center gap-1">{loadingGeo ? '...' : 'Buscar'}</button></div>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-xs font-bold text-blue-800 dark:text-blue-300">Geolocalização</span>
+                                    <button 
+                                        type="button" 
+                                        onClick={handleBuscarCoordenadas} 
+                                        disabled={loadingGeo} 
+                                        className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg flex items-center gap-2 hover:bg-blue-700 transition-colors disabled:opacity-70"
+                                    >
+                                        {loadingGeo ? <><Loader2 className="animate-spin h-3 w-3"/> Buscando...</> : 'Buscar'}
+                                    </button>
+                                </div>
                                 <div className="flex gap-2"><input className="w-1/2 p-2 rounded border text-xs" placeholder="Lat" value={formCelula.lat} onChange={e => setFormCelula({...formCelula, lat: e.target.value})}/><input className="w-1/2 p-2 rounded border text-xs" placeholder="Lon" value={formCelula.lon} onChange={e => setFormCelula({...formCelula, lon: e.target.value})}/></div>
                             </div>
                         </div>
@@ -554,17 +727,17 @@ export default function AdminDashboard() {
                     </div>
                     <form onSubmit={handleSaveSupervisor} className="space-y-4">
                         <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
-                            <h4 className="text-xs font-bold text-gray-500 uppercase mb-3">Supervisor 1 (Principal)</h4>
+                            <h4 className="text-xs font-bold text-gray-500 uppercase mb-3">Supervisor</h4>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="col-span-2"><label className="text-xs font-bold text-gray-700 dark:text-gray-300">Nome</label><input className="w-full border p-2.5 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white" value={formSupervisor.nome_1} onChange={e => setFormSupervisor({...formSupervisor, nome_1: e.target.value})} required placeholder="Ex: William" /></div>
-                                <div className="col-span-2"><label className="text-xs font-bold text-gray-700 dark:text-gray-300">WhatsApp</label><input className="w-full border p-2.5 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white" value={formSupervisor.whatsapp_1} onChange={e => setFormSupervisor({...formSupervisor, whatsapp_1: e.target.value})} required placeholder="5511..." /></div>
+                                <div className="col-span-2"><label className="text-xs font-bold text-gray-700 dark:text-gray-300">WhatsApp (DDD + Número)</label><input className="w-full border p-2.5 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white" value={formSupervisor.whatsapp_1} onChange={e => setFormSupervisor({...formSupervisor, whatsapp_1: formatarTelefone(e.target.value)})} required placeholder="(11) 99999-9999" maxLength={15}/></div>
                             </div>
                         </div>
                         <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
-                            <h4 className="text-xs font-bold text-gray-500 uppercase mb-3">Supervisor 2 (Cônjuge/Dupla)</h4>
+                            <h4 className="text-xs font-bold text-gray-500 uppercase mb-3">Supervisora</h4>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="col-span-2"><label className="text-xs font-bold text-gray-700 dark:text-gray-300">Nome (Opcional)</label><input className="w-full border p-2.5 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white" value={formSupervisor.nome_2} onChange={e => setFormSupervisor({...formSupervisor, nome_2: e.target.value})} placeholder="Ex: Ane" /></div>
-                                <div className="col-span-2"><label className="text-xs font-bold text-gray-700 dark:text-gray-300">WhatsApp (Opcional)</label><input className="w-full border p-2.5 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white" value={formSupervisor.whatsapp_2} onChange={e => setFormSupervisor({...formSupervisor, whatsapp_2: e.target.value})} placeholder="5511..." /></div>
+                                <div className="col-span-2"><label className="text-xs font-bold text-gray-700 dark:text-gray-300">WhatsApp (DDD + Número)</label><input className="w-full border p-2.5 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white" value={formSupervisor.whatsapp_2} onChange={e => setFormSupervisor({...formSupervisor, whatsapp_2: formatarTelefone(e.target.value)})} required placeholder="(11) 99999-9999" maxLength={15}/></div>
                             </div>
                         </div>
                         <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold mt-2">Salvar Supervisor</button>
@@ -583,7 +756,7 @@ export default function AdminDashboard() {
                     </div>
                     <form onSubmit={handleSaveCoordenador} className="space-y-4">
                         <div><label className="text-sm font-bold text-gray-700 dark:text-gray-300">Nome</label><input className="w-full border p-3 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white" value={formCoordenador.nome} onChange={e => setFormCoordenador({...formCoordenador, nome: e.target.value})} required /></div>
-                        <div><label className="text-sm font-bold text-gray-700 dark:text-gray-300">WhatsApp</label><input className="w-full border p-3 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white" value={formCoordenador.whatsapp} onChange={e => setFormCoordenador({...formCoordenador, whatsapp: e.target.value})} required /></div>
+                        <div className="col-span-2"><label className="text-xs font-bold text-gray-700 dark:text-gray-300">WhatsApp (DDD + Número)</label><input className="w-full border p-2.5 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white" value={formCoordenador.whatsapp} onChange={e => setFormCoordenador({...formCoordenador, whatsapp: formatarTelefone(e.target.value)})} required placeholder="(11) 99999-9999" maxLength={15}/></div>
                         <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold mt-4">Salvar Coordenador</button>
                     </form>
                 </div>
