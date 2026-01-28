@@ -685,9 +685,9 @@ export default function AdminDashboard() {
                                     type="button" 
                                     onClick={handleBuscarCep} 
                                     disabled={loadingCep}
-                                    className="bg-gray-100 dark:bg-gray-600 p-3 rounded-lg min-w-[50px] flex items-center justify-center hover:bg-gray-200 transition-colors disabled:opacity-50"
+                                    className="bg-blue-600 p-3 text-white rounded-lg min-w-[50px] flex items-center justify-center hover:bg-blue-700 transition-colors disabled:opacity-70 shadow-sm"
                                 >
-                                    {loadingCep ? <Loader2 className="animate-spin h-5 w-5 text-blue-600"/> : <Search size={20}/>}
+                                    {loadingCep ? <Loader2 className="animate-spin h-5 w-5 !text-white"/> : <Search size={20}/>}
                                 </button>
                             </div>
                             <input className="w-full border p-3 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white" placeholder="Rua" value={formCelula.logradouro} onChange={e => setFormCelula({...formCelula, logradouro: e.target.value})} required/>
