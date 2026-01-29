@@ -280,13 +280,19 @@ export default function MapaBase({ modoLider = false }) {
                       </div>
                   )}
               </>
-           ) : (
-// --- MODO PÚBLICO COM MENSAGEM PADRÃO ---
+              ) : (
+              // --- MODO PÚBLICO COM MENSAGEM + LOCALIZAÇÃO ---
               (() => {
-                  // 1. Cria a mensagem personalizada
-                  const mensagem = `Graça e paz, vi pelo localizador que tem uma célula próxima de casa,\ngostaria de mais informações sobre a ${celula.titulo}`;
+                  // 1. Inicia a mensagem padrão
+                  let mensagem = `Graça e paz, vi pelo localizador que tem uma célula próximo de casa,\ngostaria de mais informações sobre a ${celula.titulo}`;
                   
-                  // 2. Cria o link codificado (garante que espaços e quebras de linha funcionem)
+                  // 2. Se tiver localização do usuário, adiciona o link do Maps
+                  if (userLocation) {
+                      const linkMaps = `https://maps.google.com/?q=${userLocation[0]},${userLocation[1]}`;
+                      mensagem += `\n\nEstou localizado aqui: ${linkMaps}`;
+                  }
+
+                  // 3. Cria o link do WhatsApp codificado
                   const linkWhatsapp = celula.coordenadores 
                       ? `https://wa.me/${celula.coordenadores.whatsapp}?text=${encodeURIComponent(mensagem)}` 
                       : '#';
