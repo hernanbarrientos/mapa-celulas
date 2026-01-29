@@ -15,6 +15,13 @@ const CATEGORIES = {
   valentes: { label: "Valentes de Davi", color: "bg-blue-900", border: "border-blue-900", text: "text-blue-900" }
 };
 
+const DAYS_OPTIONS = [
+  { id: 'terça', label: 'Terça' },
+  { id: 'quarta', label: 'Quarta' },
+  { id: 'sexta', label: 'Sexta' },
+  { id: 'sábado', label: 'Sábado' }
+];
+
 export default function AdminDashboard() {
   // --- ESTADOS GERAIS ---
   const [activeTab, setActiveTab] = useState('celulas'); 
@@ -34,6 +41,7 @@ export default function AdminDashboard() {
   const [deleteModal, setDeleteModal] = useState({ open: false, id: null, type: null }); 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('all'); 
+  const [filterDay, setFilterDay] = useState('all');
 
   // --- FORMS ---
   const [formCelula, setFormCelula] = useState({
@@ -425,10 +433,19 @@ export default function AdminDashboard() {
         setLoadingGeo(false);
   };
 
-  const filteredCelulas = celulas.filter((celula) => {
+const filteredCelulas = celulas.filter((celula) => {
+    // 1. Filtro de Texto (Busca)
     const termo = searchTerm.toLowerCase();
     const searchFields = (celula.nome || '') + (celula.lider || '') + (celula.bairro || '');
-    return searchFields.toLowerCase().includes(termo) && (filterCategory === 'all' || celula.categoria === filterCategory);
+    const matchesSearch = searchFields.toLowerCase().includes(termo);
+
+    // 2. Filtro de Categoria
+    const matchesCategory = filterCategory === 'all' || celula.categoria === filterCategory;
+
+    // 3. NOVO: Filtro de Dia
+    const matchesDay = filterDay === 'all' || (celula.dia && celula.dia.toLowerCase().includes(filterDay));
+
+    return matchesSearch && matchesCategory && matchesDay;
   });
 
   const getCategoryInfo = (cat) => CATEGORIES[cat?.toLowerCase().trim()] || CATEGORIES.figueira;
@@ -483,15 +500,67 @@ export default function AdminDashboard() {
         </div>
 
         {/* ======================= ABA CÉLULAS ======================= */}
+{/* ======================= ABA CÉLULAS ======================= */}
         {activeTab === 'celulas' && (
             <>
-                <div className="flex justify-between items-center mb-4">
-                    <div className="flex-1 max-w-md relative"><Search className="absolute left-3 top-3 text-gray-400" size={18} /><input type="text" placeholder="Buscar..." className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border-none rounded-lg text-gray-800 dark:text-white shadow-sm" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} /></div>
-                    <button onClick={() => openFormCelula()} className="ml-4 flex items-center gap-2 bg-green-600 text-white px-4 py-2.5 rounded-lg font-bold shadow-sm hover:bg-green-700"><Plus size={20} /> <span className="hidden md:inline">Cadastrar Nova Célula</span></button>
-                </div>
-                <div className="flex gap-2 overflow-x-auto pb-4">{['all', 'figueira', 'teens', 'valentes'].map(cat => (<button key={cat} onClick={() => setFilterCategory(cat)} className={`px-5 py-2 rounded-lg text-sm font-bold whitespace-nowrap transition-all border ${filterCategory === cat ? 'bg-gray-900 text-white border-gray-900 dark:bg-white dark:text-gray-900' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700'}`}>{cat === 'all' ? 'Todas' : LABELS[cat]}</button>))}</div>
+                {/* LINHA 1: BUSCA + CATEGORIAS + BOTÃO NOVA */}
+                <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-4 gap-4">
+                    
+                    {/* Grupo Esquerda: Busca e Categorias */}
+                    <div className="flex flex-col md:flex-row items-center gap-4 w-full xl:w-auto overflow-hidden">
+                        
+                        {/* 1. Barra de Busca (Tamanho fixo em desktop) */}
+                        <div className="relative w-full md:w-72 shrink-0">
+                            <Search className="absolute left-3 top-3 text-gray-400" size={18} />
+                            <input 
+                                type="text" 
+                                placeholder="Buscar..." 
+                                className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border rounded-lg text-gray-800 dark:text-white shadow-sm outline-none transition-all" 
+                                value={searchTerm} 
+                                onChange={(e) => setSearchTerm(e.target.value)} 
+                            />
+                        </div>
 
-                {/* Lista Desktop */}
+                        {/* 2. Botões de Categoria (Ao lado da busca) */}
+                        <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-1 scrollbar-hide items-center">
+                            {['all', 'figueira', 'teens', 'valentes'].map(cat => (
+                                <button 
+                                    key={cat} 
+                                    onClick={() => setFilterCategory(cat)} 
+                                    className={`px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap transition-all border ${filterCategory === cat ? 'bg-gray-900 text-white border-gray-900 dark:bg-white dark:text-gray-900' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700'}`}
+                                >
+                                    {cat === 'all' ? 'Todas' : LABELS[cat]}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* 3. Botão Nova Célula (À direita) */}
+                    <button onClick={() => openFormCelula()} className="flex items-center gap-2 bg-green-600 text-white px-6 py-2.5 rounded-lg font-bold shadow-sm hover:bg-green-700 shrink-0 w-full md:w-auto justify-center">
+                        <Plus size={20} /> <span>Cadastrar Nova Célula</span>
+                    </button>
+                </div>
+
+                {/* LINHA 2: FILTRO DE DIAS */}
+                <div className="flex gap-2 overflow-x-auto pb-4 border-b border-gray-100 dark:border-gray-800 mb-6 scrollbar-hide">
+                     <button 
+                        onClick={() => setFilterDay('all')} 
+                        className={`px-4 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all border ${filterDay === 'all' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700'}`}
+                     >
+                        Todas
+                     </button>
+                     {DAYS_OPTIONS.map(d => (
+                        <button 
+                            key={d.id} 
+                            onClick={() => setFilterDay(d.id)} 
+                            className={`px-4 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all border ${filterDay === d.id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700'}`}
+                        >
+                            {d.label}
+                        </button>
+                     ))}
+                </div>
+
+                {/* TABELA (Lista Desktop) - Mantenha o código da tabela igual ao anterior */}
                 <div className="hidden md:block bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
                     <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                         <thead className="bg-gray-50 dark:bg-gray-900">
@@ -530,7 +599,7 @@ export default function AdminDashboard() {
                     </table>
                 </div>
 
-                {/* Lista Mobile */}
+                {/* LISTA MOBILE - Mantenha o código da lista mobile igual ao anterior */}
                 <div className="md:hidden space-y-4 pb-24">
                     {filteredCelulas.map((c) => {
                         const catInfo = getCategoryInfo(c.categoria);
