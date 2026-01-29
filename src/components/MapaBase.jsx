@@ -281,8 +281,8 @@ export default function MapaBase({ modoLider = false }) {
                   )}
               </>
            ) : (
-              <a href={celula.coordenadores ? `https://wa.me/${celula.coordenadores.whatsapp}` : '#'} target="_blank" className="flex items-center justify-center gap-2 w-full py-3 rounded-lg text-sm font-bold bg-[#25D366] text-white hover:bg-[#20bd5a] transition-colors shadow-md no-underline">
-                  <WhatsAppIcon className="w-5 h-5 text-white" /> Fale Conosco
+              <a href={celula.coordenadores ? `https://wa.me/${celula.coordenadores.whatsapp}` : '#'} target="_blank" className="flex items-center justify-center gap-2 w-full py-3 rounded-lg text-sm font-bold bg-[#25D366] !text-white hover:bg-[#20bd5a] transition-colors shadow-md no-underline">
+                  <WhatsAppIcon className="w-5 h-5 !text-white" /> Fale Conosco
               </a>
            )}
            <a href={`https://www.google.com/maps/dir/?api=1&destination=${celula.coords[0]},${celula.coords[1]}`} target="_blank" className="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg text-xs font-bold bg-blue-600 !text-white border hover:bg-blue-800 transition-colors shadow-sm no-underline mt-1">
