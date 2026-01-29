@@ -472,7 +472,12 @@ export default function AdminDashboard() {
 
         {/* ABAS */}
         <div className="flex gap-4 mb-6 border-b dark:border-gray-700 pb-1 overflow-x-auto">
-            <button onClick={() => setActiveTab('celulas')} className={`pb-3 px-4 text-sm font-bold flex items-center gap-2 transition-all whitespace-nowrap ${activeTab === 'celulas' ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-800'}`}><LayoutGrid size={18}/> Células</button>
+            <button 
+                onClick={() => setActiveTab('celulas')} 
+                className={`pb-3 px-4 text-sm font-bold flex items-center gap-2 transition-all whitespace-nowrap ${activeTab === 'celulas' ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-800'}`}
+            >
+                <LayoutGrid size={18}/> Células ({celulas.length})
+            </button>
             <button onClick={() => setActiveTab('supervisores')} className={`pb-3 px-4 text-sm font-bold flex items-center gap-2 transition-all whitespace-nowrap ${activeTab === 'supervisores' ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-800'}`}><UserCheck size={18}/> Supervisores ({supervisores.length})</button>
             <button onClick={() => setActiveTab('coordenadores')} className={`pb-3 px-4 text-sm font-bold flex items-center gap-2 transition-all whitespace-nowrap ${activeTab === 'coordenadores' ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-800'}`}><UserCog size={18}/> Coordenadores ({coordenadores.length})</button>
         </div>
