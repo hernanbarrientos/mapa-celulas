@@ -291,7 +291,7 @@ const renderPopupContent = (celula) => (
            ) : (
               // --- MODO PÚBLICO COM MENSAGEM + LOCALIZAÇÃO ---
               (() => {
-                  let mensagem = `Graça e paz, vi pelo localizador que tem uma célula ${celula.categoriaLabel} próxima de casa,\ngostaria de mais informações sobre a ${celula.titulo}`;
+                  let mensagem = `Graça e paz, vi pelo localizador que tem uma célula ${celula.categoriaLabel} próximo de casa e\ngostaria de mais informações sobre a ${celula.titulo}`;
                   
                   if (userLocation) {
                       const linkMaps = `https://maps.google.com/?q=${userLocation[0]},${userLocation[1]}`;
