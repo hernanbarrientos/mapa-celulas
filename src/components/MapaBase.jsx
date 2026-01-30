@@ -303,7 +303,7 @@ const renderPopupContent = (celula) => (
                       : '#';
 
                   return (
-                      <a href={linkWhatsapp} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 w-full py-3 rounded-lg text-sm font-bold bg-[#25D366] text-white hover:bg-[#20bd5a] transition-colors shadow-md no-underline">
+                      <a href={linkWhatsapp} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 w-full py-3 rounded-lg text-sm font-bold bg-[#25D366] !text-white hover:bg-[#20bd5a] transition-colors shadow-md no-underline">
                           <WhatsAppIcon className="w-5 h-5 text-white" /> Fale Conosco
                       </a>
                   );
