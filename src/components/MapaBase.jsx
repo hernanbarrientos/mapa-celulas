@@ -218,27 +218,33 @@ export default function MapaBase({ modoLider = false }) {
   
     .sort((a, b) => (a.distancia !== null && b.distancia !== null) ? a.distancia - b.distancia : 0);
 
-  const renderPopupContent = (celula) => (
+const renderPopupContent = (celula) => (
     <div className="min-w-[240px] text-left bg-white">
        <div className={`${celula.cor} p-4 flex items-center justify-between`}>
           <span className="font-bold text-white text-sm uppercase tracking-wide">{celula.titulo}</span>
        </div>
        <div className="p-4 text-gray-700 space-y-2.5 text-sm leading-relaxed">
+          
           {celula.nome && (
               <div className="flex items-center gap-2 mb-1">
                   <span className={`px-2 py-0.5 rounded text-[10px] font-bold text-white ${celula.cor}`}>{celula.categoriaLabel}</span>
               </div>
           )}
+          {modoLider && celula.supervisores && (
+
           <div className="flex items-center gap-2">
              <User size={16} className="text-gray-400 shrink-0" />
-             <span className="line-clamp-1"><strong className="text-gray-900">Líder:</strong> {celula.liderExibicao}</span>
+             <span className="line-clamp-1"><strong className="text-gray-900">Líderes:</strong> {celula.liderExibicao}</span>
           </div>
-          {celula.supervisores && (
+          )}
+          {/* CORREÇÃO AQUI: Adicionado 'modoLider &&' antes de mostrar supervisores */}
+          {modoLider && celula.supervisores && (
              <div className="flex items-center gap-2">
                 <UserCheck size={16} className="text-gray-400 shrink-0" />
                 <span className="line-clamp-1"><strong className="text-gray-900">Sup:</strong> {celula.supervisores.nome_1} {celula.supervisores.nome_2 && `e ${celula.supervisores.nome_2}`}</span>
              </div>
           )}
+
           <div className="flex items-start gap-2">
              <MapPin size={16} className="text-gray-400 mt-0.5 shrink-0" />
              <div>
@@ -248,10 +254,12 @@ export default function MapaBase({ modoLider = false }) {
                 {!modoLider && <span className="block text-[10px] text-gray-400 mt-0.5 uppercase tracking-wide font-bold">Localização Aproximada</span>}
              </div>
           </div>
+
           <div className="flex items-center gap-2">
              <Calendar size={16} className="text-gray-400 shrink-0" />
              <span className="text-blue-600 font-bold">{celula.dia}</span>
           </div>
+
          <div className="flex flex-col gap-2 mt-4 pt-2 border-t border-gray-100">
            {modoLider ? (
               <>
@@ -280,25 +288,22 @@ export default function MapaBase({ modoLider = false }) {
                       </div>
                   )}
               </>
-              ) : (
+           ) : (
               // --- MODO PÚBLICO COM MENSAGEM + LOCALIZAÇÃO ---
               (() => {
-                  // 1. Inicia a mensagem padrão
-                  let mensagem = `Graça e paz, vi pelo localizador que tem uma célula próximo de casa,\ngostaria de mais informações sobre a ${celula.titulo}`;
+                  let mensagem = `Graça e paz, vi pelo localizador que tem uma célula próxima de casa,\ngostaria de mais informações sobre a ${celula.titulo}`;
                   
-                  // 2. Se tiver localização do usuário, adiciona o link do Maps
                   if (userLocation) {
                       const linkMaps = `https://maps.google.com/?q=${userLocation[0]},${userLocation[1]}`;
                       mensagem += `\n\nEstou localizado aqui: ${linkMaps}`;
                   }
 
-                  // 3. Cria o link do WhatsApp codificado
                   const linkWhatsapp = celula.coordenadores 
                       ? `https://wa.me/${celula.coordenadores.whatsapp}?text=${encodeURIComponent(mensagem)}` 
                       : '#';
 
                   return (
-                      <a href={linkWhatsapp} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 w-full py-3 rounded-lg text-sm font-bold bg-[#25D366] !text-white hover:bg-[#20bd5a] transition-colors shadow-md no-underline">
+                      <a href={linkWhatsapp} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 w-full py-3 rounded-lg text-sm font-bold bg-[#25D366] text-white hover:bg-[#20bd5a] transition-colors shadow-md no-underline">
                           <WhatsAppIcon className="w-5 h-5 text-white" /> Fale Conosco
                       </a>
                   );
