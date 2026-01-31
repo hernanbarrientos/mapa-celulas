@@ -1,12 +1,40 @@
 import { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, CircleMarker, Tooltip } from 'react-leaflet';
-import { Search, MapPin, Calendar, User, Users, MessageCircle, Loader2, Map as MapIcon, List, Navigation, X, Moon, Sun, UserCheck } from 'lucide-react';
+// Adicione 'Car' na lista de importações
+import { Search, MapPin, Calendar, User, Users, MessageCircle, Loader2, Map as MapIcon, List, Navigation, X, Moon, Sun, UserCheck, Car } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { supabase } from '../supabaseClient';
 
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+
+const GoogleMapsIcon = () => (
+  <svg viewBox="0 0 232597 333333" className="w-6 h-6 shrink-0" shapeRendering="geometricPrecision" textRendering="geometricPrecision" imageRendering="optimizeQuality" fillRule="evenodd" clipRule="evenodd">
+    <path d="M151444 5419C140355 1916 128560 0 116311 0 80573 0 48591 16155 27269 41534l54942 46222 69232-82338z" fill="#1a73e8"/>
+    <path d="M27244 41534C10257 61747 0 87832 0 116286c0 21876 4360 39594 11517 55472l70669-84002-54942-46222z" fill="#ea4335"/>
+    <path d="M116311 71828c24573 0 44483 19910 44483 44483 0 10938-3957 20969-10509 28706 0 0 35133-41786 69232-82313-14089-27093-38510-47936-68048-57286L82186 87756c8166-9753 20415-15928 34125-15928z" fill="#4285f4"/>
+    <path d="M116311 160769c-24573 0-44483-19910-44483-44483 0-10863 3906-20818 10358-28555l-70669 84027c12072 26791 32159 48289 52851 75381l85891-102122c-8141 9628-20339 15752-33948 15752z" fill="#fbbc04"/>
+    <path d="M148571 275014c38787-60663 84026-88210 84026-158728 0-19331-4738-37552-13080-53581L64393 247140c6578 8620 13206 17793 19683 27900 23590 36444 17037 58294 32260 58294 15172 0 8644-21876 32235-58320z" fill="#34a853"/>
+  </svg>
+);
+
+// Mantenha o Waze e Uber como estavam, pois você gostou
+const WazeIcon = () => (
+  <svg viewBox="0 0 123 123" className="w-6 h-6 shrink-0" fill="white">
+     <path d="M55.1 104.2c4.2 0 8.4.2 12.7-.1 3.8-.2 7.9-.6 11.6-1.5 29.8-7.3 45.8-40.2 32.7-68.1C104.3 17.8 90.8 8.2 72.3 6.2 58.1 4.7 45.5 8.9 34.8 18.5 24.3 28 18.9 39.8 18.5 53.9c-.1 3.3 0 6.7 0 9.9-.1 7.2-4.1 12.7-11 14.9-.1 0-.3.2-.4.2 2.6 6.9 13.3 17.2 20 19.7 8.3 2.5 25.2 6.6 28 19.6zm19.8-24.5c-11.1-.6-18.4-5-23.1-13.8-1.1-2.2-.1-4.3 2.1-4.8 1.3-.3 2.5.7 3.5 2.2 1.2 1.9 2.4 3.8 4 5.3 8.8 8.3 23.3 5.7 28.8-5.1.7-1.3 1.5-2.3 3.1-2.3 2.3.1 3.7 2.4 2.6 4.6-2.9 5.9-7.5 10.2-13.7 12.3-2.7.9-5.5 1.3-7.3 1.6zM55.3 49c-3.4 0-6.1-2.7-6.1-6.1s2.7-6.1 6.1-6.1 6.1 2.7 6.1 6.1c0 3.3-2.7 6.1-6.1 6.1zm43 0c-3.4 0-6.1-2.7-6.1-6.1s2.7-6.1 6.1-6.1 6.1 2.7 6.1 6.1c-1.3 3.3-4 6.1-6.1 6.1z"/>
+  </svg>
+);
+
+const UberIcon = () => (
+  <svg viewBox="0 0 24 24" className="w-6 h-6 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2" />
+    <circle cx="7" cy="17" r="2" />
+    <path d="M9 17h6" />
+    <circle cx="17" cy="17" r="2" />
+  </svg>
+);
+
 
 let DefaultIcon = L.icon({
     iconUrl: icon,
@@ -219,143 +247,213 @@ export default function MapaBase({ modoLider = false }) {
     .sort((a, b) => (a.distancia !== null && b.distancia !== null) ? a.distancia - b.distancia : 0);
 
 const renderPopupContent = (celula) => (
-    <div className="min-w-[240px] text-left bg-white">
-       <div className={`${celula.cor} p-4 flex items-center justify-between`}>
-          <span className="font-bold text-white text-sm uppercase tracking-wide">{celula.titulo}</span>
+    <div className="min-w-[260px] text-left bg-white font-sans">
+       {/* TOPO COLORIDO */}
+       <div className={`${celula.cor} p-3 flex items-center justify-between`}>
+          <span className="font-bold text-white text-sm uppercase tracking-wide pr-2">{celula.titulo}</span>
+          <span className="bg-white/20 text-white text-[10px] px-2 py-0.5 rounded font-bold backdrop-blur-sm whitespace-nowrap">
+            {celula.categoriaLabel}
+          </span>
        </div>
-       <div className="p-4 text-gray-700 space-y-2.5 text-sm leading-relaxed">
+
+       <div className="p-4 text-gray-700 space-y-4 text-sm">
           
-          {celula.nome && (
-              <div className="flex items-center gap-2 mb-1">
-                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold text-white ${celula.cor}`}>{celula.categoriaLabel}</span>
-              </div>
-          )}
-          {modoLider && celula.supervisores && (
-
-          <div className="flex items-center gap-2">
-             <User size={16} className="text-gray-400 shrink-0" />
-             <span className="line-clamp-1"><strong className="text-gray-900">Líderes:</strong> {celula.liderExibicao}</span>
-          </div>
-          )}
-          {/* CORREÇÃO AQUI: Adicionado 'modoLider &&' antes de mostrar supervisores */}
-          {modoLider && celula.supervisores && (
-             <div className="flex items-center gap-2">
-                <UserCheck size={16} className="text-gray-400 shrink-0" />
-                <span className="line-clamp-1"><strong className="text-gray-900">Sup:</strong> {celula.supervisores.nome_1} {celula.supervisores.nome_2 && `e ${celula.supervisores.nome_2}`}</span>
-             </div>
-          )}
-
-          <div className="flex items-start gap-2">
-             <MapPin size={16} className="text-gray-400 mt-0.5 shrink-0" />
+          {/* ENDEREÇO (Sempre no topo) */}
+          <div className="flex items-start gap-2.5 pb-3 border-b border-gray-100">
+             <MapPin size={18} className="text-gray-400 mt-0.5 shrink-0" />
              <div>
-                <span className="block text-gray-700 leading-tight">
-                   {modoLider ? `${formatEnderecoCompleto(celula)} - ${celula.bairro}` : celula.bairro}
+                <span className="block text-gray-800 font-medium leading-snug">
+                   {modoLider ? `${formatEnderecoCompleto(celula)}` : celula.bairro}
                 </span>
+                {modoLider && <span className="text-xs text-gray-500">{celula.bairro}</span>}
+                
                 {!modoLider && <span className="block text-[10px] text-gray-400 mt-0.5 uppercase tracking-wide font-bold">Localização Aproximada</span>}
+                
+                <div className="flex items-center gap-1.5 mt-1.5 text-blue-600 font-bold text-xs">
+                    <Calendar size={14}/> {celula.dia}
+                </div>
              </div>
           </div>
 
-          <div className="flex items-center gap-2">
-             <Calendar size={16} className="text-gray-400 shrink-0" />
-             <span className="text-blue-600 font-bold">{celula.dia}</span>
-          </div>
+         {/* --- ÁREA DE CONTATOS --- */}
+         {modoLider ? (
+            <div className="space-y-4">
+                
+                {/* BLOCO 1: LÍDERES */}
+                <div>
+                    <div className="flex items-center gap-2 mb-2">
+                        <User size={16} className="text-gray-400" />
+                        <span className="text-gray-900 font-bold text-sm">Líderes: <span className="font-normal text-gray-600">{celula.liderExibicao}</span></span>
+                    </div>
+                    {/* Botões dos Líderes */}
+                    <div className="grid grid-cols-2 gap-2">
+                        {celula.lider1_whatsapp ? (
+                            <a href={`https://wa.me/${celula.lider1_whatsapp}`} target="_blank" className="flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 transition-colors no-underline shadow-sm">
+                                <WhatsAppIcon className="w-4 h-4" /> {celula.lider1_nome?.split(' ')[0] || 'Líder 1'}
+                            </a>
+                        ) : <span className="text-xs text-gray-400 italic text-center py-2">Sem Contato</span>}
+                        
+                        {celula.lider2_whatsapp && (
+                            <a href={`https://wa.me/${celula.lider2_whatsapp}`} target="_blank" className="flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 transition-colors no-underline shadow-sm">
+                                <WhatsAppIcon className="w-4 h-4" /> {celula.lider2_nome?.split(' ')[0] || 'Líder 2'}
+                            </a>
+                        )}
+                    </div>
+                </div>
 
-         <div className="flex flex-col gap-2 mt-4 pt-2 border-t border-gray-100">
-           {modoLider ? (
-              <>
-                  <div className="grid grid-cols-2 gap-2">
-                    {celula.lider1_whatsapp && (
-                        <a href={`https://wa.me/${celula.lider1_whatsapp}`} target="_blank" className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-xs font-bold bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 transition-colors no-underline text-center shadow-sm">
-                            <WhatsAppIcon className="w-4 h-4" /> {celula.lider1_nome?.split(' ')[0] || 'Líder 1'}
-                        </a>
-                    )}
-                    {celula.lider2_whatsapp && (
-                        <a href={`https://wa.me/${celula.lider2_whatsapp}`} target="_blank" className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-xs font-bold bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 transition-colors no-underline text-center shadow-sm">
-                            <WhatsAppIcon className="w-4 h-4" /> {celula.lider2_nome?.split(' ')[0] || 'Líder 2'}
-                        </a>
-                    )}
-                  </div>
-                  {celula.supervisores && (
-                      <div className="flex flex-col gap-2">
-                          <a href={`https://wa.me/${celula.supervisores.whatsapp_1}`} target="_blank" className="flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-bold bg-cyan-700 !text-white hover:bg-cyan-800 transition-colors no-underline w-full shadow-sm">
-                              <WhatsAppIcon className="w-4 h-4" /> Supervisor {celula.supervisores.nome_1.split(' ')[0]}
-                          </a>
-                          {celula.supervisores.whatsapp_2 && (
-                              <a href={`https://wa.me/${celula.supervisores.whatsapp_2}`} target="_blank" className="flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-bold bg-cyan-700 !text-white hover:bg-cyan-800 transition-colors no-underline w-full shadow-sm">
-                                  <WhatsAppIcon className="w-4 h-4" /> Supervisora {celula.supervisores.nome_2.split(' ')[0]}
-                              </a>
-                          )}
-                      </div>
-                  )}
-              </>
-           ) : (
-              // --- MODO PÚBLICO COM MENSAGEM + LOCALIZAÇÃO ---
-              (() => {
-                  let mensagem = `Graça e paz, vi pelo localizador que tem uma célula ${celula.categoriaLabel} próximo de casa e\ngostaria de mais informações sobre a ${celula.titulo}`;
-                  
-                  if (userLocation) {
-                      const linkMaps = `https://maps.google.com/?q=${userLocation[0]},${userLocation[1]}`;
-                      mensagem += `\n\nEstou localizado aqui: ${linkMaps}`;
-                  }
+                {/* BLOCO 2: SUPERVISORES */}
+                {celula.supervisores && (
+                    <div className="pt-3 border-t border-gray-100">
+                        <div className="flex items-center gap-2 mb-2">
+                            <UserCheck size={16} className="text-blue-500" />
+                            <span className="text-gray-900 font-bold text-sm">Supervisores: <span className="font-normal text-gray-600">{celula.supervisores.nome_1} {celula.supervisores.nome_2 && `e ${celula.supervisores.nome_2}`}</span></span>
+                        </div>
+                        {/* Botões dos Supervisores */}
+                        <div className="grid grid-cols-2 gap-2">
+                            <a href={`https://wa.me/${celula.supervisores.whatsapp_1}`} target="_blank" className="flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold bg-blue-50 text-blue-700 border border-blue-100 hover:bg-blue-100 transition-colors no-underline w-full shadow-sm">
+                                <WhatsAppIcon className="w-4 h-4" />{celula.supervisores.nome_1.split(' ')[0]}
+                            </a>
+                            {celula.supervisores.whatsapp_2 && (
+                                <a href={`https://wa.me/${celula.supervisores.whatsapp_2}`} target="_blank" className="flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold bg-blue-50 text-blue-700 border border-blue-100 hover:bg-blue-100 transition-colors no-underline w-full shadow-sm">
+                                    <WhatsAppIcon className="w-4 h-4" /> {celula.supervisores.nome_2.split(' ')[0]}
+                                </a>
+                            )}
+                        </div>
+                    </div>
+                )}
 
-                  const linkWhatsapp = celula.coordenadores 
-                      ? `https://wa.me/${celula.coordenadores.whatsapp}?text=${encodeURIComponent(mensagem)}` 
-                      : '#';
+            </div>
+         ) : (
+            // VISÃO PÚBLICA (MANTÉM COMO ESTAVA)
+            (() => {
+                let mensagem = `Graça e paz, vi pelo localizador que tem uma célula ${celula.categoriaLabel} próxima de casa,\ngostaria de mais informações sobre a ${celula.titulo}`;
+                if (userLocation) {
+                    const linkMaps = `http://googleusercontent.com/maps.google.com/?q=${userLocation[0]},${userLocation[1]}`;
+                    mensagem += `\n\nEstou localizado aqui: ${linkMaps}`;
+                }
+                const linkWhatsapp = celula.coordenadores 
+                    ? `https://wa.me/${celula.coordenadores.whatsapp}?text=${encodeURIComponent(mensagem)}` 
+                    : '#';
 
-                  return (
-                      <a href={linkWhatsapp} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 w-full py-3 rounded-lg text-sm font-bold bg-[#25D366] !text-white hover:bg-[#20bd5a] transition-colors shadow-md no-underline">
-                          <WhatsAppIcon className="w-5 h-5 text-white" /> Fale Conosco
-                      </a>
-                  );
-              })()
-           )}
-           <a href={`https://www.google.com/maps/dir/?api=1&destination=${celula.coords[0]},${celula.coords[1]}`} target="_blank" className="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg text-xs font-bold bg-blue-600 !text-white border hover:bg-blue-800 transition-colors shadow-sm no-underline mt-1">
-               <Navigation size={14} /> Traçar Rota
-           </a>
+                return (
+                    <a href={linkWhatsapp} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 w-full py-3 rounded-lg text-sm font-bold bg-[#25D366] !text-white hover:bg-[#20bd5a] transition-colors shadow-md no-underline">
+                        <WhatsAppIcon className="w-5 h-5 text-white" /> Fale Conosco
+                    </a>
+                );
+            })()
+         )}
+
+         {/* BARRA DE NAVEGAÇÃO VERTICAL (Google, Waze, Uber) */}
+ {/* BARRA DE NAVEGAÇÃO VERTICAL */}
+{/* BARRA DE NAVEGAÇÃO VERTICAL */}
+{/* BARRA DE NAVEGAÇÃO VERTICAL CENTRALIZADA */}
+         <div className="mt-4 pt-3 border-t border-gray-100 flex flex-col gap-2.5">
+             <span className="text-[10px] font-bold text-gray-400 uppercase text-center tracking-wider mb-1">Navegar com:</span>
+
+             {/* 1. GOOGLE MAPS */}
+             <a 
+                href={`http://googleusercontent.com/maps.google.com/?q=${celula.coords[0]},${celula.coords[1]}`} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                // Alterado para justify-center e gap-3
+                className="flex items-center justify-center gap-3 w-full py-3 rounded-lg bg-[#4285F4] !text-white hover:bg-blue-600 transition-transform hover:scale-[1.02] shadow-sm no-underline group"
+             >
+                 {/* Círculo branco pequeno para dar destaque ao Pin colorido */}
+                 <div className="bg-white rounded-full p-0.5 flex items-center justify-center w-7 h-7 shadow-sm"><GoogleMapsIcon /></div>
+                 <span className="font-bold text-sm">Google Maps</span>
+             </a>
+
+             {/* 2. WAZE */}
+             <a 
+                href={`https://waze.com/ul?ll=${celula.coords[0]},${celula.coords[1]}&navigate=yes`} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-3 w-full py-3 rounded-lg bg-[#33CCFF] !text-white hover:bg-cyan-400 transition-transform hover:scale-[1.02] shadow-sm no-underline group"
+             >
+                 <div className="flex items-center justify-center w-7 h-7"><WazeIcon /></div>
+                 <span className="font-bold text-sm">Waze</span>
+             </a>
+
+             {/* 3. UBER */}
+             <a 
+                href={`https://m.uber.com/ul/?action=setPickup&client_id=YOUR_CLIENT_ID&pickup=my_location&dropoff[latitude]=${celula.coords[0]}&dropoff[longitude]=${celula.coords[1]}&dropoff[nickname]=${encodeURIComponent(celula.titulo)}`} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-3 w-full py-3 rounded-lg bg-black !text-white hover:bg-gray-800 transition-transform hover:scale-[1.02] shadow-sm no-underline group"
+             >
+                 <div className="flex items-center justify-center w-7 h-7"><UberIcon /></div>
+                 <span className="font-bold text-sm">Uber</span>
+             </a>
+
          </div>
-       </div>
+
+         </div>
+
+
+
+       
     </div>
   );
 
-  const renderSidebarCard = (celula) => (
+const renderSidebarCard = (celula) => (
     <div className={`${celula.cor} p-5 rounded-lg shadow-md transition-all hover:shadow-lg relative overflow-hidden cursor-pointer group`}>
         <div className="absolute top-0 right-0 -mt-4 -mr-4 text-white/10 pointer-events-none group-hover:scale-110 transition-transform">
             <Users size={100} strokeWidth={1} />
         </div>
-        <div className="flex justify-between items-start mb-4 relative z-10">
+        
+        {/* CABEÇALHO */}
+        <div className="flex justify-between items-start mb-3 relative z-10">
             <div>
-                <h3 className="font-bold text-xl text-white">{celula.titulo}</h3>
-                {celula.nome && <p className="text-sm text-white/90 font-medium">{celula.liderExibicao}</p>}
-                <span className="inline-block mt-1.5 px-3 py-1 rounded-lg bg-white/20 text-white text-xs font-bold backdrop-blur-sm">
+                <h3 className="font-bold text-xl text-white leading-tight mb-1">{celula.titulo}</h3>
+                <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-white/20 text-white backdrop-blur-sm">
                     {celula.categoriaLabel}
                 </span>
             </div>
-            {/* CORREÇÃO AQUI: Verificação de segurança para o toFixed */}
             {typeof celula.distancia === 'number' && (
-                <div className="bg-white/20 text-white px-2 py-1 rounded-md text-xs font-bold flex items-center gap-1 backdrop-blur-sm">
+                <div className="bg-white/20 text-white px-2 py-1 rounded-md text-xs font-bold flex items-center gap-1 backdrop-blur-sm shrink-0">
                     <Navigation size={12} className="fill-current"/>{celula.distancia < 1 ? Math.round(celula.distancia*1000) + 'm' : celula.distancia.toFixed(1) + 'km'}
                 </div>
             )}
         </div>
-        <div className="space-y-2 relative z-10 pl-2 text-white/90 text-sm">
+
+        {/* CORPO */}
+        <div className="space-y-2 relative z-10 text-white/90 text-sm">
+            
+            {/* Bloco Líderes (NA MESMA LINHA) */}
+            <div className="flex items-start gap-2">
+                <User size={16} className="mt-0.5 text-white/70 shrink-0" />
+                <p className="leading-tight">
+                    {/* Removi o 'block' e adicionei 'mr-1' */}
+                    <span className="font-bold opacity-70 text-xs uppercase mr-1">Líderes:</span>
+                    {celula.liderExibicao}
+                </p>
+            </div>
+
+            {/* Bloco Supervisores (NA MESMA LINHA) */}
             {modoLider && celula.supervisores && (
-                <div className="flex items-center gap-2 font-bold bg-white/10 p-1.5 rounded-md -ml-1.5 w-fit">
-                    <UserCheck size={16} className="text-white shrink-0" />
-                    <span>Sup: {celula.supervisores.nome_1} {celula.supervisores.nome_2 && `e ${celula.supervisores.nome_2}`}</span>
+                <div className="flex items-start gap-2">
+                    <UserCheck size={16} className="mt-0.5 text-white/70 shrink-0" />
+                    <p className="leading-tight">
+                        <span className="font-bold opacity-70 text-xs uppercase mr-1">Supervisores:</span>
+                        {celula.supervisores.nome_1} {celula.supervisores.nome_2 && `e ${celula.supervisores.nome_2}`}
+                    </p>
                 </div>
             )}
-            <div className="flex items-start gap-2">
-                <MapPin size={18} className="text-white/70 mt-0.5 shrink-0" />
+
+            {/* Endereço */}
+            <div className="flex items-start gap-2 pt-1 border-t border-white/10 mt-2">
+                <MapPin size={16} className="mt-0.5 text-white/70 shrink-0" />
                 <div>
                     <p className="font-medium text-white line-clamp-1">{celula.bairro}</p>
-                    <p className="text-xs text-white/70 line-clamp-2">
+                    <p className="text-xs text-white/70 line-clamp-1">
                         {modoLider ? formatEnderecoCompleto(celula) : "Localização aproximada"}
                     </p>
                 </div>
             </div>
+
             <div className="flex items-center gap-2">
-                <Calendar size={18} className="text-white/70 shrink-0" />
-                <span className="font-bold">{celula.dia}</span>
+                <Calendar size={16} className="text-white/70 shrink-0" />
+                <span className="font-bold text-xs">{celula.dia}</span>
             </div>
         </div>
     </div>
