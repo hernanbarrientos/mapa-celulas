@@ -343,29 +343,25 @@ const renderPopupContent = (celula) => (
             })()
          )}
 
-         {/* BARRA DE NAVEGAÇÃO VERTICAL (Google, Waze, Uber) */}
- {/* BARRA DE NAVEGAÇÃO VERTICAL */}
-{/* BARRA DE NAVEGAÇÃO VERTICAL */}
-{/* BARRA DE NAVEGAÇÃO VERTICAL CENTRALIZADA */}
+        {/* BARRA DE NAVEGAÇÃO VERTICAL CORRIGIDA */}
          <div className="mt-4 pt-3 border-t border-gray-100 flex flex-col gap-2.5">
              <span className="text-[10px] font-bold text-gray-400 uppercase text-center tracking-wider mb-1">Navegar com:</span>
 
-             {/* 1. GOOGLE MAPS */}
+             {/* 1. GOOGLE MAPS (Link Corrigido) */}
              <a 
-                href={`http://googleusercontent.com/maps.google.com/?q=${celula.coords[0]},${celula.coords[1]}`} 
+                href={`https://www.google.com/maps/search/?api=1&query=${celula.coords[0]},${celula.coords[1]}`} 
                 target="_blank" 
                 rel="noopener noreferrer"
-                // Alterado para justify-center e gap-3
                 className="flex items-center justify-center gap-3 w-full py-3 rounded-lg bg-[#4285F4] !text-white hover:bg-blue-600 transition-transform hover:scale-[1.02] shadow-sm no-underline group"
              >
-                 {/* Círculo branco pequeno para dar destaque ao Pin colorido */}
+                 {/* Círculo branco para destacar o Pin colorido */}
                  <div className="bg-white rounded-full p-0.5 flex items-center justify-center w-7 h-7 shadow-sm"><GoogleMapsIcon /></div>
                  <span className="font-bold text-sm">Google Maps</span>
              </a>
 
-             {/* 2. WAZE */}
+             {/* 2. WAZE (Link Corrigido) */}
              <a 
-                href={`https://waze.com/ul?ll=${celula.coords[0]},${celula.coords[1]}&navigate=yes`} 
+                href={`https://www.waze.com/ul?ll=${celula.coords[0]},${celula.coords[1]}&navigate=yes`} 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="flex items-center justify-center gap-3 w-full py-3 rounded-lg bg-[#33CCFF] !text-white hover:bg-cyan-400 transition-transform hover:scale-[1.02] shadow-sm no-underline group"
@@ -374,7 +370,7 @@ const renderPopupContent = (celula) => (
                  <span className="font-bold text-sm">Waze</span>
              </a>
 
-             {/* 3. UBER */}
+             {/* 3. UBER (Já estava correto, mas atualizei o text-white) */}
              <a 
                 href={`https://m.uber.com/ul/?action=setPickup&client_id=YOUR_CLIENT_ID&pickup=my_location&dropoff[latitude]=${celula.coords[0]}&dropoff[longitude]=${celula.coords[1]}&dropoff[nickname]=${encodeURIComponent(celula.titulo)}`} 
                 target="_blank" 
