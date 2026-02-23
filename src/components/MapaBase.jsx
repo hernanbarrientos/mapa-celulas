@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, CircleMarker, Tooltip } from 'react-leaflet';
-// Adicione 'Car' na lista de importações
 import { Search, MapPin, Calendar, User, Users, MessageCircle, Loader2, Map as MapIcon, List, Navigation, X, Moon, Sun, UserCheck, Car } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -19,7 +18,6 @@ const GoogleMapsIcon = () => (
   </svg>
 );
 
-// Mantenha o Waze e Uber como estavam, pois você gostou
 const WazeIcon = () => (
   <svg viewBox="0 0 123 123" className="w-6 h-6 shrink-0" fill="white">
      <path d="M55.1 104.2c4.2 0 8.4.2 12.7-.1 3.8-.2 7.9-.6 11.6-1.5 29.8-7.3 45.8-40.2 32.7-68.1C104.3 17.8 90.8 8.2 72.3 6.2 58.1 4.7 45.5 8.9 34.8 18.5 24.3 28 18.9 39.8 18.5 53.9c-.1 3.3 0 6.7 0 9.9-.1 7.2-4.1 12.7-11 14.9-.1 0-.3.2-.4.2 2.6 6.9 13.3 17.2 20 19.7 8.3 2.5 25.2 6.6 28 19.6zm19.8-24.5c-11.1-.6-18.4-5-23.1-13.8-1.1-2.2-.1-4.3 2.1-4.8 1.3-.3 2.5.7 3.5 2.2 1.2 1.9 2.4 3.8 4 5.3 8.8 8.3 23.3 5.7 28.8-5.1.7-1.3 1.5-2.3 3.1-2.3 2.3.1 3.7 2.4 2.6 4.6-2.9 5.9-7.5 10.2-13.7 12.3-2.7.9-5.5 1.3-7.3 1.6zM55.3 49c-3.4 0-6.1-2.7-6.1-6.1s2.7-6.1 6.1-6.1 6.1 2.7 6.1 6.1c0 3.3-2.7 6.1-6.1 6.1zm43 0c-3.4 0-6.1-2.7-6.1-6.1s2.7-6.1 6.1-6.1 6.1 2.7 6.1 6.1c-1.3 3.3-4 6.1-6.1 6.1z"/>
@@ -202,21 +200,38 @@ export default function MapaBase({ modoLider = false }) {
     safeFlyTo(lat, lon); 
   };
 
-  const handleCellClick = (celula) => {
+const handleCellClick = (celula) => {
     setMobileView('map');
+    
     setTimeout(() => {
-      if (mapRef.current) {
-        mapRef.current.invalidateSize();
-        mapRef.current.flyTo(celula.coords, 16, { duration: 1.5 });
+      if (mapRef.current && markerRefs.current[celula.id]) {
+        const map = mapRef.current;
+        map.invalidateSize();
+        
+        // 1. Pega as coordenadas exatas da célula e converte para "pixels" da tela
+        const zoomLevel = 16;
+        const targetPoint = map.project(celula.coords, zoomLevel);
+        
+        // 2. Desconta 180 pixels na altura (eixo Y). 
+        // Isso joga a "mira" do mapa mais para cima, fazendo o pino descer.
+        targetPoint.y -= 240; 
+        
+        // 3. Converte os pixels de volta para Latitude/Longitude
+        const targetLatLng = map.unproject(targetPoint, zoomLevel);
+        
+        // 4. Voa para essa nova posição ajustada
+        map.flyTo(targetLatLng, zoomLevel, { duration: 1.5 });
+        
+        // 5. Abre o card
+        markerRefs.current[celula.id].openPopup();
       }
-      if (markerRefs.current[celula.id]) markerRefs.current[celula.id].openPopup();
-    }, 100);
+    }, 400);
   };
 
   const toggleView = () => {
     const newView = mobileView === 'list' ? 'map' : 'list';
     setMobileView(newView);
-    if (newView === 'map') setTimeout(() => mapRef.current?.invalidateSize(), 100);
+    if (newView === 'map') setTimeout(() => mapRef.current?.invalidateSize(), 400);
   };
 
   // --- LÓGICA DE FILTRO E DISTÂNCIA (COM PROTEÇÃO) ---
@@ -249,8 +264,8 @@ export default function MapaBase({ modoLider = false }) {
 const renderPopupContent = (celula) => (
     <div className="min-w-[260px] text-left bg-white font-sans">
        {/* TOPO COLORIDO */}
-       <div className={`${celula.cor} p-3 flex items-center justify-between`}>
-          <span className="font-bold text-white text-sm uppercase tracking-wide pr-2">{celula.titulo}</span>
+        <div className={`${celula.cor} p-3.5 flex flex-col items-start gap-1.5`}>
+          <span className="font-bold text-white text-sm uppercase tracking-wide leading-tight">{celula.titulo}</span>
           <span className="bg-white/20 text-white text-[10px] px-2 py-0.5 rounded font-bold backdrop-blur-sm whitespace-nowrap">
             {celula.categoriaLabel}
           </span>
@@ -349,13 +364,13 @@ const renderPopupContent = (celula) => (
 
              {/* 1. GOOGLE MAPS (Link Corrigido) */}
              <a 
-                href={`https://www.google.com/maps/search/?api=1&query=${celula.coords[0]},${celula.coords[1]}`} 
+                // AQUI ESTÁ A MUDANÇA: Usando o link oficial de rotas (dir) do Google
+                href={`https://www.google.com/maps/dir/?api=1&destination=${celula.coords[0]},${celula.coords[1]}`} 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="flex items-center justify-center gap-3 w-full py-3 rounded-lg bg-[#4285F4] !text-white hover:bg-blue-600 transition-transform hover:scale-[1.02] shadow-sm no-underline group"
+                className="flex items-center justify-center gap-3 w-full py-3 rounded-lg bg-[#043f9e] !text-white hover:bg-blue-600 transition-transform hover:scale-[1.02] shadow-sm no-underline group"
              >
-                 {/* Círculo branco para destacar o Pin colorido */}
-                 <div className="bg-white rounded-full p-0.5 flex items-center justify-center w-7 h-7 shadow-sm"><GoogleMapsIcon /></div>
+                 <div className="flex items-center justify-center w-7 h-7"><GoogleMapsIcon /></div>
                  <span className="font-bold text-sm">Google Maps</span>
              </a>
 
@@ -456,7 +471,7 @@ const renderSidebarCard = (celula) => (
   );
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300 md:flex-row overflow-hidden relative">
+    <div className="flex flex-col h-[100dvh] bg-gray-50 dark:bg-gray-900 transition-colors duration-300 md:flex-row overflow-hidden relative">
       <div className={`w-full md:w-[450px] md:shrink-0 flex-col h-full bg-white dark:bg-gray-900 shadow-2xl z-20 transition-all ${mobileView === 'map' ? 'hidden md:flex' : 'flex'}`}>
         <div className="p-6 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shrink-0 relative"> 
           <div className="flex justify-between items-start mb-1">
