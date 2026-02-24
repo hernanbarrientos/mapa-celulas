@@ -174,15 +174,20 @@ export default function MapaBase({ modoLider = false }) {
     );
   };
 
-  const handleInputChange = (e) => {
+const handleInputChange = (e) => {
     const value = e.target.value;
     setSearchTerm(value);
     if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
     if (value.length < 3) { setSuggestions([]); setShowSuggestions(false); return; }
+    
     searchTimeoutRef.current = setTimeout(async () => {
         try {
-            const query = `${value}, Estado de São Paulo, Brazil`;
-            const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1`);
+            // 1. O query agora é apenas o que o usuário digitou
+            const query = value; 
+            
+            // 2. Adicionamos '&countrycodes=br' direto na URL da API
+            const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=br&limit=5&addressdetails=1`);
+            
             const data = await res.json();
             setSuggestions(data);
             setShowSuggestions(true);
